@@ -16,8 +16,8 @@ FUZZY_MATCH_ERROR = 0.0001
 # @param error: float
 # returns True if obs_val is within error of true_val
 def fuzzy_match(true_val, obs_val, error):
-    assert type(true_val) == type(obs_val)
     if isinstance(true_val, list):
+        assert isinstance(obs_val, list)
         for tv, ov in zip(true_val, obs_val):
             if ov < tv * (1.0 - error) or ov > tv * (1.0 + error):
                 return False
@@ -407,10 +407,133 @@ def test_marginals():
     test_marginals_brute_force_triangle()
 
 
+def test_learning_node_level():
+    print('--- TESTING NODE_LEVEL ---')
+    pa1 = rng.uniform()
+    a = BinaryNode('a', [], [pa1])
+    assert a.probability(()) == pa1
+
+    new_pa1 = round(rng.uniform(), 1)
+    data = {(): (10, int(10 * new_pa1))}
+    a.learn(data)
+    assert a.probability(()) == new_pa1
+    print('PASSED')
+    print()
+
+
+def test_learning_single_node():
+    print('--- TESTING SINGLE_NODE ---')
+    pa1 = rng.uniform()
+    a = BinaryNode('a', [], [pa1])
+    bnet = BinaryBayesianNetwork([a])
+    assert bnet.probability({a: 1}) == pa1
+
+    n_a1s = rng.integers(1, 10)
+    data = (
+        [{a: 0} for _ in range(10 - n_a1s)]
+        + [{a: 1} for _ in range(n_a1s)]
+    )
+    bnet.learn(data)
+    assert fuzzy_match(
+        n_a1s * 1.0 / 10.0,
+        bnet.probability({a: 1}),
+        FUZZY_MATCH_ERROR
+    )
+    print('PASSED')
+    print()
+
+
+def test_learning_two_nodes():
+    print('--- TESTING TWO_NODES ---')
+    pa1 = rng.uniform()
+    pa0_b1 = rng.uniform()
+    pa1_b1 = rng.uniform()
+    a = BinaryNode('a', [], [pa1])
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
+    bnet = BinaryBayesianNetwork([a, b])
+    assert bnet.probability({a: 1}) == pa1
+    assert fuzzy_match(
+        (1 - pa1) * pa0_b1,
+        bnet.probability({a: 0, b: 1}),
+        FUZZY_MATCH_ERROR
+    )
+    assert fuzzy_match(
+        pa1 * pa1_b1,
+        bnet.probability({a: 1, b: 1}),
+        FUZZY_MATCH_ERROR
+    )
+    assert fuzzy_match(
+        (1 - pa1) * pa0_b1 + pa1 * pa1_b1,
+        bnet.get_marginal_by_brute_force([b])[1],
+        FUZZY_MATCH_ERROR
+    )
+
+    n_a1s = rng.integers(1, 10)
+    n_a0_b1s = rng.integers(1, 10)
+    n_a1_b1s = rng.integers(1, 10)
+    new_pa1 = n_a1s * 1.0 / 10.0
+    new_pa0_b1 = n_a0_b1s * 1.0 / 10.0
+    new_pa1_b1 = n_a1_b1s * 1.0 / 10.0
+    nested_data = (
+        [
+            [
+                {a: 0, b: 0}
+                for _ in range(10 - n_a0_b1s)
+            ]
+            + [
+                {a: 0, b: 1}
+                for _ in range(n_a0_b1s)
+            ]
+            for _ in range(10 - n_a1s)
+        ]
+        + [
+            [
+                {a: 1, b: 0}
+                for _ in range(10 - n_a1_b1s)
+            ]
+            + [
+                {a: 1, b: 1}
+                for _ in range(n_a1_b1s)
+            ]
+            for _ in range(n_a1s)
+        ]
+    )
+    flat_data = []
+    for data_list in nested_data:
+        for d in data_list:
+            flat_data.append(d)
+    bnet.learn(flat_data)
+    assert fuzzy_match(
+        (1 - new_pa1) * new_pa0_b1,
+        bnet.probability({a: 0, b: 1}),
+        FUZZY_MATCH_ERROR
+    )
+    assert fuzzy_match(
+        new_pa1 * new_pa1_b1,
+        bnet.probability({a: 1, b: 1}),
+        FUZZY_MATCH_ERROR
+    )
+    assert fuzzy_match(
+        (1 - new_pa1) * new_pa0_b1 + new_pa1 * new_pa1_b1,
+        bnet.get_marginal_by_brute_force([b])[1],
+        FUZZY_MATCH_ERROR
+    )
+    print('PASSED')
+    print()
+
+
+def test_learning():
+    print('--- TESTING LEARNING ---')
+    test_learning_node_level()
+    test_learning_single_node()
+    test_learning_two_nodes()
+
+
 def run_tests():
     print('--- RUNNING TESTS WITH SEED {} ---'.format(seed))
     test_independence()
     test_marginals()
+    test_learning()
 
 
 if __name__ == '__main__':

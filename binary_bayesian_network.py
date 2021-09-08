@@ -1,6 +1,7 @@
 
 from numpy.random import uniform
 import networkx as nx
+from collections import defaultdict
 
 
 # @param parent_values: list of node's parents' values
@@ -48,6 +49,7 @@ class BinaryNode:
         assert len(prob_table) == 2 ** len(parents)
         self.id = id
         self.parents = parents
+        self.n_parents = len(self.parents)
         self.prob_table = prob_table
 
     def __repr__(self):
@@ -70,6 +72,22 @@ class BinaryNode:
         assert len(parent_values) == len(self.parents)
         prob_table_index = parent_values_to_index(parent_values)
         return self.prob_table[prob_table_index]
+
+    # @param data: dict
+    #   keys are parent configs, values are 2-tuple
+    #   all parent configs must be present
+    #   1st entry of 2-tuple is # of times that parent config occurred
+    #   2nd entry of 2-tuple is # of times parent config caused node value = 1
+    #   {parent_config0: (n_occurences, n_ones)}
+    # @returns None, updates prob_table of node
+    def learn(self, data):
+        assert len(data) ==  2 ** self.n_parents
+        new_prob_table = []
+        for i in range(2 ** self.n_parents):
+            parent_config = parent_index_to_values(i, self.n_parents)
+            n_occurences, n_ones = data[parent_config]
+            new_prob_table.append(n_ones * 1.0 / n_occurences)
+        self.prob_table = new_prob_table
 
 
 # TODO: add ability to seed network for deterministic results
@@ -127,7 +145,7 @@ class BinaryBayesianNetwork:
             for p in node.parents:
                 # TODO: implement custom exception
                 # if p not in node_values:
-                #     throw custom exception
+                #     raise custom exception
                 parent_values.append(node_values[p])
             node_prob = node.probability(parent_values)
             if node_value == 1:
@@ -172,12 +190,36 @@ class BinaryBayesianNetwork:
                 prob_sum[j] += self.probability(node_values)
         return prob_sum
 
+    # @param data: list of observations
+    #   each observation is a dict, keys are nodes, values are node values
+    #   each observation should contain values for all nodes in the graph
+    #   [{node: value, ...}, ...]
+    # @returns None, updates prob_tables of nodes in the network
+    def learn(self, data):
+        for node in self.ordered_nodes:
+            node_data = defaultdict(lambda : (0, 0))
+            for obs in data:
+                # TODO: implement custom exception
+                # if obs.keys() < set(node.parents + [node]):
+                #     raise custom exception
+                parent_config = tuple(obs[parent] for parent in node.parents)
+                node_data[parent_config] = (
+                    node_data[parent_config][0] + 1,
+                    node_data[parent_config][1] + obs[node]
+                )
+            if len(node_data) == 2 ** node.n_parents:
+                node.learn(node_data)
+
 
 def main():
     a = BinaryNode('a', [], [0.5])
     b = BinaryNode('b', [a], [0.9, 0.4])
     bnet = BinaryBayesianNetwork([a, b])
-    print(bnet.get_marginal_by_brute_force([a, b]))
+    print(bnet.get_marginal_by_brute_force([b]))
+    # a.learn({(): (100, 10)})
+    bnet.learn([{a: 1}] + [{a: 0} for _ in range(9)])
+    print(bnet.get_marginal_by_brute_force([b]))
+    # bnet.learn([{a: 0, b: 0}, {a: 0, b: 1}, {a: 1, b: 0}, {a: 1, b: 1}])
 
 
 if __name__ == '__main__':
