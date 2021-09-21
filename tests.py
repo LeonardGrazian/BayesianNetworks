@@ -529,11 +529,37 @@ def test_learning():
     test_learning_two_nodes()
 
 
+def test_rejection_sampling():
+    print('--- TESTING REJECTION SAMPLING ---')
+    pa1 = rng.uniform()
+    pa0_b1 = rng.uniform()
+    pa1_b1 = rng.uniform()
+    pb0_c1 = rng.uniform()
+    pb1_c1 = rng.uniform()
+    a = BinaryNode('a', [], [pa1])
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
+    c = BinaryNode('c', [b], [pb0_c1, pb1_c1])
+    bnet = BinaryBayesianNetwork([a, b, c])
+
+    positives = 0
+    for _ in range(N_SAMPLE):
+        node_samples = bnet.sample(node_values={a: 0})
+        if node_samples is not None:
+            positives += 1
+    sample_prob = positives * 1.0 / N_SAMPLE
+    true_prob = bnet.probability({a: 0})
+    print('rejection sampling prob = {:.2} (should be {:.2})'.format(
+        sample_prob,
+        true_prob
+    ))
+
+
 def run_tests():
     print('--- RUNNING TESTS WITH SEED {} ---'.format(seed))
     test_independence()
     test_marginals()
     test_learning()
+    test_rejection_sampling()
 
 
 if __name__ == '__main__':
