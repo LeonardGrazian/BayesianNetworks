@@ -192,7 +192,7 @@ class BinaryBayesianNetwork:
 
     # @param data: list of observations
     #   each observation is a dict, keys are nodes, values are node values
-    #   each observation should contain values for all nodes in the graph
+    #   each observation must contain values for all nodes in the graph
     #   [{node: value, ...}, ...]
     # @returns None, updates prob_tables of nodes in the network
     def learn(self, data):
@@ -209,6 +209,23 @@ class BinaryBayesianNetwork:
                 )
             if len(node_data) == 2 ** node.n_parents:
                 node.learn(node_data)
+
+
+    # @param data: list of observations
+    #   each observation is a dict, keys are nodes, values are node values
+    #   each observation must contain a value for at least one node
+    #   [{node: value, ...}, ...]
+    # @returns None, updates prob_tables of nodes in the network
+    # TODO: implementation does not pass tests
+    def learn_latent(self, data, em_iterations=1000):
+        for _ in range(em_iterations):
+            # hallucinate missing data using current prob_tables
+            hallucinated_data = []
+            for obs in data:
+                hallucinated_obs = self.conditional_sample(obs)
+                hallucinated_data.append(hallucinated_obs)
+            # learn using real data and hallucinated data
+            self.learn(hallucinated_data)
 
 
 def main():

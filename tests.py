@@ -9,6 +9,10 @@ N_SAMPLE = 10000
 CORRELATED_THRESHOLD = 0.1
 NOT_CORRELATED_THRESHOLD = 0.05
 FUZZY_MATCH_ERROR = 0.0001
+LEARNING_DATA_SIZE = int(1.0e6)
+LEARNING_ERROR = 0.05
+REJECTION_SAMPLING_SAMPLES = int(1.0e5)
+REJECTION_SAMPLING_ERROR = 0.01
 
 
 # @param true_val: float
@@ -522,11 +526,279 @@ def test_learning_two_nodes():
     print()
 
 
+def test_learning_cascade():
+    print('--- TESTING LEARNING_CASCADE ---')
+    # create a "true" bayesian network to generate our data
+    pa1_true = rng.uniform()
+    pa0_b1_true = rng.uniform()
+    pa1_b1_true = rng.uniform()
+    pb0_c1_true = rng.uniform()
+    pb1_c1_true = rng.uniform()
+    a_true = BinaryNode('a', [], [pa1_true])
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
+    c_true = BinaryNode('c', [b_true], [pb0_c1_true, pb1_c1_true])
+    bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
+
+    # generate data
+    data = []
+    for _ in range(LEARNING_DATA_SIZE):
+        obs = bnet_true.sample()
+        data.append(obs)
+
+    # initialize new bayesian net for learning
+    pa1_init = rng.uniform()
+    pa0_b1_init = rng.uniform()
+    pa1_b1_init = rng.uniform()
+    pb0_c1_init = rng.uniform()
+    pb1_c1_init = rng.uniform()
+    a = BinaryNode('a', [], [pa1_init])
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
+    c = BinaryNode('c', [b], [pb0_c1_init, pb1_c1_init])
+    bnet = BinaryBayesianNetwork([a, b, c])
+
+    # translate true nodes to learning nodes in generated data
+    node_mapping = {a_true: a, b_true: b, c_true: c}
+    data = [{node_mapping[k]: v for k, v in obs.items()} for obs in data]
+
+    # learn from generated data to replicate "true" bayesian net
+    bnet.learn(data)
+
+    # check learning results
+    for p_true, p in zip(a_true.prob_table, a.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(b_true.prob_table, b.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(c_true.prob_table, c.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    print('PASSED')
+    print()
+
+
+def test_learning_common_parent():
+    print('--- TESTING COMMON_PARENT ---')
+    # create a "true" bayesian network to generate our data
+    pa1_true = rng.uniform()
+    pa0_b1_true = rng.uniform()
+    pa1_b1_true = rng.uniform()
+    pa0_c1_true = rng.uniform()
+    pa1_c1_true = rng.uniform()
+    a_true = BinaryNode('a', [], [pa1_true])
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
+    c_true = BinaryNode('c', [a_true], [pa0_c1_true, pa1_c1_true])
+    bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
+
+    # generate data
+    data = []
+    for _ in range(LEARNING_DATA_SIZE):
+        obs = bnet_true.sample()
+        data.append(obs)
+
+    # initialize new bayesian net for learning
+    pa1_init = rng.uniform()
+    pa0_b1_init = rng.uniform()
+    pa1_b1_init = rng.uniform()
+    pa0_c1_init = rng.uniform()
+    pa1_c1_init = rng.uniform()
+    a = BinaryNode('a', [], [pa1_init])
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
+    c = BinaryNode('c', [a], [pa0_c1_init, pa1_c1_init])
+    bnet = BinaryBayesianNetwork([a, b, c])
+
+    # translate true nodes to learning nodes in generated data
+    node_mapping = {a_true: a, b_true: b, c_true: c}
+    data = [{node_mapping[k]: v for k, v in obs.items()} for obs in data]
+
+    # learn from generated data to replicate "true" bayesian net
+    bnet.learn(data)
+
+    # check learning results
+    for p_true, p in zip(a_true.prob_table, a.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(b_true.prob_table, b.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(c_true.prob_table, c.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    print('PASSED')
+    print()
+
+
+def test_learning_v_structure():
+    print('--- TESTING V_STRUCTURE ---')
+    # create a "true" bayesian network to generate our data
+    pa1_true = rng.uniform()
+    pb1_true = rng.uniform()
+    pa0b0_c1_true = rng.uniform()
+    pa1b0_c1_true = rng.uniform()
+    pa0b1_c1_true = rng.uniform()
+    pa1b1_c1_true = rng.uniform()
+    a_true = BinaryNode('a', [], [pa1_true])
+    b_true = BinaryNode('b', [], [pb1_true])
+    c_true = BinaryNode(
+        'c',
+        [a_true, b_true],
+        [pa0b0_c1_true, pa1b0_c1_true, pa0b1_c1_true, pa1b1_c1_true]
+    )
+    bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
+
+    # generate data
+    data = []
+    for _ in range(LEARNING_DATA_SIZE):
+        obs = bnet_true.sample()
+        data.append(obs)
+
+    # initialize new bayesian net for learning
+    pa1_init = rng.uniform()
+    pb1_init = rng.uniform()
+    pa0b0_c1_init = rng.uniform()
+    pa1b0_c1_init = rng.uniform()
+    pa0b1_c1_init = rng.uniform()
+    pa1b1_c1_init = rng.uniform()
+    a = BinaryNode('a', [], [pa1_init])
+    b = BinaryNode('b', [], [pb1_init])
+    c = BinaryNode(
+        'c',
+        [a, b],
+        [pa0b0_c1_init, pa1b0_c1_init, pa0b1_c1_init, pa1b1_c1_init]
+    )
+    bnet = BinaryBayesianNetwork([a, b, c])
+
+    # translate true nodes to learning nodes in generated data
+    node_mapping = {a_true: a, b_true: b, c_true: c}
+    data = [{node_mapping[k]: v for k, v in obs.items()} for obs in data]
+
+    # learn from generated data to replicate "true" bayesian net
+    bnet.learn(data)
+
+    # check learning results
+    for p_true, p in zip(a_true.prob_table, a.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(b_true.prob_table, b.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(c_true.prob_table, c.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    print('PASSED')
+    print()
+
+
+def test_learning_triangle():
+    print('--- TESTING TRIANGLE ---')
+    # create a "true" bayesian network to generate our data
+    pa1_true = rng.uniform()
+    pa0_b1_true = rng.uniform()
+    pa1_b1_true = rng.uniform()
+    pa0b0_c1_true = rng.uniform()
+    pa1b0_c1_true = rng.uniform()
+    pa0b1_c1_true = rng.uniform()
+    pa1b1_c1_true = rng.uniform()
+    a_true = BinaryNode('a', [], [pa1_true])
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
+    c_true = BinaryNode(
+        'c',
+        [a_true, b_true],
+        [pa0b0_c1_true, pa1b0_c1_true, pa0b1_c1_true, pa1b1_c1_true]
+    )
+    bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
+
+    # generate data
+    data = []
+    for _ in range(LEARNING_DATA_SIZE):
+        obs = bnet_true.sample()
+        data.append(obs)
+
+    # initialize new bayesian net for learning
+    pa1_init = rng.uniform()
+    pa0_b1_init = rng.uniform()
+    pa1_b1_init = rng.uniform()
+    pa0b0_c1_init = rng.uniform()
+    pa1b0_c1_init = rng.uniform()
+    pa0b1_c1_init = rng.uniform()
+    pa1b1_c1_init = rng.uniform()
+    a = BinaryNode('a', [], [pa1_init])
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
+    c = BinaryNode(
+        'c',
+        [a, b],
+        [pa0b0_c1_init, pa1b0_c1_init, pa0b1_c1_init, pa1b1_c1_init]
+    )
+    bnet = BinaryBayesianNetwork([a, b, c])
+
+    # translate true nodes to learning nodes in generated data
+    node_mapping = {a_true: a, b_true: b, c_true: c}
+    data = [{node_mapping[k]: v for k, v in obs.items()} for obs in data]
+
+    # learn from generated data to replicate "true" bayesian net
+    bnet.learn(data)
+
+    # check learning results
+    for p_true, p in zip(a_true.prob_table, a.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(b_true.prob_table, b.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    for p_true, p in zip(c_true.prob_table, c.prob_table):
+        assert fuzzy_match(p_true, p, LEARNING_ERROR)
+    print('PASSED')
+    print()
+
+
 def test_learning():
     print('--- TESTING LEARNING ---')
     test_learning_node_level()
     test_learning_single_node()
     test_learning_two_nodes()
+    test_learning_cascade()
+    test_learning_common_parent()
+    test_learning_v_structure()
+    test_learning_triangle()
+
+
+def test_latent_learning():
+    print('--- TESTING LATENT LEARNING ---')
+    # create a "true" bayesian network to generate our data
+    pa1_true = rng.uniform()
+    pa0_b1_true = rng.uniform()
+    pa1_b1_true = rng.uniform()
+    pb0_c1_true = rng.uniform()
+    pb1_c1_true = rng.uniform()
+    a_true = BinaryNode('a', [], [pa1_true])
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
+    c_true = BinaryNode('c', [b_true], [pb0_c1_true, pb1_c1_true])
+    bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
+
+    # generate data
+    data = []
+    for _ in range(LEARNING_DATA_SIZE):
+        obs = bnet_true.sample()
+        del obs[b_true]
+        data.append(obs)
+
+    # initialize new bayesian net for learning
+    pa1_init = rng.uniform()
+    pa0_b1_init = rng.uniform()
+    pa1_b1_init = rng.uniform()
+    pb0_c1_init = rng.uniform()
+    pb1_c1_init = rng.uniform()
+    a = BinaryNode('a', [], [pa1_init])
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
+    c = BinaryNode('c', [b], [pb0_c1_init, pb1_c1_init])
+    bnet = BinaryBayesianNetwork([a, b, c])
+
+    # translate true nodes to learning nodes in generated data
+    node_mapping = {a_true: a, b_true: b, c_true: c}
+    data = [{node_mapping[k]: v for k, v in obs.items()} for obs in data]
+
+    # learn from generated data to replicate "true" bayesian net
+    bnet.learn_latent(data)
+
+    # check learning results
+    print(a.prob_table)
+    print(a_true.prob_table)
+    print()
+    print(b.prob_table)
+    print(b_true.prob_table)
+    print()
+    print(c.prob_table)
+    print(c_true.prob_table)
+    print()
 
 
 def test_rejection_sampling():
@@ -542,16 +814,17 @@ def test_rejection_sampling():
     bnet = BinaryBayesianNetwork([a, b, c])
 
     positives = 0
-    for _ in range(N_SAMPLE):
+    for _ in range(REJECTION_SAMPLING_SAMPLES):
         node_samples = bnet.sample(node_values={a: 0})
         if node_samples is not None:
             positives += 1
-    sample_prob = positives * 1.0 / N_SAMPLE
+    sample_prob = positives * 1.0 / REJECTION_SAMPLING_SAMPLES
     true_prob = bnet.probability({a: 0})
     print('rejection sampling prob = {:.2} (should be {:.2})'.format(
         sample_prob,
         true_prob
     ))
+    assert fuzzy_match(true_prob, sample_prob, REJECTION_SAMPLING_ERROR)
 
 
 def run_tests():
@@ -559,6 +832,7 @@ def run_tests():
     test_independence()
     test_marginals()
     test_learning()
+    # test_latent_learning()
     test_rejection_sampling()
 
 
