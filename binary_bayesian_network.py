@@ -3,6 +3,8 @@ from numpy.random import uniform
 import networkx as nx
 from collections import defaultdict
 
+from exceptions import NodeNotFoundException, IncompleteDataException
+
 
 # @param parent_values: list of node's parents' values
 # @returns int, index of prob table corresponding to given parent values
@@ -143,9 +145,8 @@ class BinaryBayesianNetwork:
             node_value = node_values[node]
             parent_values = []
             for p in node.parents:
-                # TODO: implement custom exception
-                # if p not in node_values:
-                #     raise custom exception
+                if p not in node_values:
+                    raise NodeNotFoundException(p)
                 parent_values.append(node_values[p])
             node_prob = node.probability(parent_values)
             if node_value == 1:
@@ -199,9 +200,8 @@ class BinaryBayesianNetwork:
         for node in self.ordered_nodes:
             node_data = defaultdict(lambda : (0, 0))
             for obs in data:
-                # TODO: implement custom exception
-                # if obs.keys() < set(node.parents + [node]):
-                #     raise custom exception
+                if obs.keys() < set(node.parents + [node]):
+                    raise IncompleteDataException(obs)
                 parent_config = tuple(obs[parent] for parent in node.parents)
                 node_data[parent_config] = (
                     node_data[parent_config][0] + 1,
