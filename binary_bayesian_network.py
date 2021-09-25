@@ -97,7 +97,6 @@ class BinaryNode:
         self.prob_table = new_prob_table
 
 
-# TODO: add ability to seed network for deterministic results
 class BinaryBayesianNetwork:
     # @param nodes: an iterable containing BinaryNode objects
     def __init__(self, nodes):
