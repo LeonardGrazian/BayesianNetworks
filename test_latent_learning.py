@@ -15,9 +15,9 @@ def test_latent_learning(rng):
     pa1_b1_true = rng.uniform()
     pb0_c1_true = rng.uniform()
     pb1_c1_true = rng.uniform()
-    a_true = BinaryNode('a', [], [pa1_true])
-    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
-    c_true = BinaryNode('c', [b_true], [pb0_c1_true, pb1_c1_true])
+    a_true = BinaryNode('a', [], [pa1_true], rng=rng)
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true], rng=rng)
+    c_true = BinaryNode('c', [b_true], [pb0_c1_true, pb1_c1_true], rng=rng)
     bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
 
     # generate data
@@ -33,9 +33,9 @@ def test_latent_learning(rng):
     pa1_b1_init = rng.uniform()
     pb0_c1_init = rng.uniform()
     pb1_c1_init = rng.uniform()
-    a = BinaryNode('a', [], [pa1_init])
-    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
-    c = BinaryNode('c', [b], [pb0_c1_init, pb1_c1_init])
+    a = BinaryNode('a', [], [pa1_init], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init], rng=rng)
+    c = BinaryNode('c', [b], [pb0_c1_init, pb1_c1_init], rng=rng)
     bnet = BinaryBayesianNetwork([a, b, c])
 
     # translate true nodes to learning nodes in generated data

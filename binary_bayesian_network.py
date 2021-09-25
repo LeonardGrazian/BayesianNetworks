@@ -1,5 +1,5 @@
 
-from numpy.random import uniform
+import numpy as np
 import networkx as nx
 from collections import defaultdict
 
@@ -47,12 +47,17 @@ class BinaryNode:
     # @param parents: a list, each item is a parent node of this node
     # @param prob_table: a list, each item is the probability that
     #   this node is 1 given that its parents have taken some value
-    def __init__(self, id, parents, prob_table):
+    def __init__(self, id, parents, prob_table, rng=None):
         assert len(prob_table) == 2 ** len(parents)
         self.id = id
         self.parents = parents
         self.n_parents = len(self.parents)
         self.prob_table = prob_table
+        if rng is None:
+            self.rng = np.random.default_rng()
+        else:
+            self.rng = rng
+
 
     def __repr__(self):
         return '<BinaryNode {}>'.format(self.id)
@@ -62,7 +67,7 @@ class BinaryNode:
     #   the first entry of list corresponds to first parent in node.parents
     # @returns a sample of node's value conditioned on parent's values
     def conditional_sample(self, parent_values):
-        if uniform() < self.probability(parent_values):
+        if self.rng.uniform() < self.probability(parent_values):
             return 1
         return 0
 

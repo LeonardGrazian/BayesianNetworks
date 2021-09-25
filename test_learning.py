@@ -12,7 +12,7 @@ LEARNING_ERROR = 0.05
 def test_learning_node_level(rng):
     print('--- TESTING NODE_LEVEL ---')
     pa1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
     assert a.probability(()) == pa1
 
     new_pa1 = round(rng.uniform(), 1)
@@ -26,7 +26,7 @@ def test_learning_node_level(rng):
 def test_learning_single_node(rng):
     print('--- TESTING SINGLE_NODE ---')
     pa1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
     bnet = BinaryBayesianNetwork([a])
     assert bnet.probability({a: 1}) == pa1
 
@@ -50,8 +50,8 @@ def test_learning_two_nodes(rng):
     pa1 = rng.uniform()
     pa0_b1 = rng.uniform()
     pa1_b1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
-    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1], rng=rng)
     bnet = BinaryBayesianNetwork([a, b])
     assert bnet.probability({a: 1}) == pa1
     assert fuzzy_match(
@@ -132,9 +132,9 @@ def test_learning_cascade(rng):
     pa1_b1_true = rng.uniform()
     pb0_c1_true = rng.uniform()
     pb1_c1_true = rng.uniform()
-    a_true = BinaryNode('a', [], [pa1_true])
-    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
-    c_true = BinaryNode('c', [b_true], [pb0_c1_true, pb1_c1_true])
+    a_true = BinaryNode('a', [], [pa1_true], rng=rng)
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true], rng=rng)
+    c_true = BinaryNode('c', [b_true], [pb0_c1_true, pb1_c1_true], rng=rng)
     bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
 
     # generate data
@@ -149,9 +149,9 @@ def test_learning_cascade(rng):
     pa1_b1_init = rng.uniform()
     pb0_c1_init = rng.uniform()
     pb1_c1_init = rng.uniform()
-    a = BinaryNode('a', [], [pa1_init])
-    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
-    c = BinaryNode('c', [b], [pb0_c1_init, pb1_c1_init])
+    a = BinaryNode('a', [], [pa1_init], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init], rng=rng)
+    c = BinaryNode('c', [b], [pb0_c1_init, pb1_c1_init], rng=rng)
     bnet = BinaryBayesianNetwork([a, b, c])
 
     # translate true nodes to learning nodes in generated data
@@ -180,9 +180,9 @@ def test_learning_common_parent(rng):
     pa1_b1_true = rng.uniform()
     pa0_c1_true = rng.uniform()
     pa1_c1_true = rng.uniform()
-    a_true = BinaryNode('a', [], [pa1_true])
-    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
-    c_true = BinaryNode('c', [a_true], [pa0_c1_true, pa1_c1_true])
+    a_true = BinaryNode('a', [], [pa1_true], rng=rng)
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true], rng=rng)
+    c_true = BinaryNode('c', [a_true], [pa0_c1_true, pa1_c1_true], rng=rng)
     bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
 
     # generate data
@@ -197,9 +197,9 @@ def test_learning_common_parent(rng):
     pa1_b1_init = rng.uniform()
     pa0_c1_init = rng.uniform()
     pa1_c1_init = rng.uniform()
-    a = BinaryNode('a', [], [pa1_init])
-    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
-    c = BinaryNode('c', [a], [pa0_c1_init, pa1_c1_init])
+    a = BinaryNode('a', [], [pa1_init], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init], rng=rng)
+    c = BinaryNode('c', [a], [pa0_c1_init, pa1_c1_init], rng=rng)
     bnet = BinaryBayesianNetwork([a, b, c])
 
     # translate true nodes to learning nodes in generated data
@@ -229,12 +229,13 @@ def test_learning_v_structure(rng):
     pa1b0_c1_true = rng.uniform()
     pa0b1_c1_true = rng.uniform()
     pa1b1_c1_true = rng.uniform()
-    a_true = BinaryNode('a', [], [pa1_true])
-    b_true = BinaryNode('b', [], [pb1_true])
+    a_true = BinaryNode('a', [], [pa1_true], rng=rng)
+    b_true = BinaryNode('b', [], [pb1_true], rng=rng)
     c_true = BinaryNode(
         'c',
         [a_true, b_true],
-        [pa0b0_c1_true, pa1b0_c1_true, pa0b1_c1_true, pa1b1_c1_true]
+        [pa0b0_c1_true, pa1b0_c1_true, pa0b1_c1_true, pa1b1_c1_true],
+        rng=rng
     )
     bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
 
@@ -251,12 +252,13 @@ def test_learning_v_structure(rng):
     pa1b0_c1_init = rng.uniform()
     pa0b1_c1_init = rng.uniform()
     pa1b1_c1_init = rng.uniform()
-    a = BinaryNode('a', [], [pa1_init])
-    b = BinaryNode('b', [], [pb1_init])
+    a = BinaryNode('a', [], [pa1_init], rng=rng)
+    b = BinaryNode('b', [], [pb1_init], rng=rng)
     c = BinaryNode(
         'c',
         [a, b],
-        [pa0b0_c1_init, pa1b0_c1_init, pa0b1_c1_init, pa1b1_c1_init]
+        [pa0b0_c1_init, pa1b0_c1_init, pa0b1_c1_init, pa1b1_c1_init],
+        rng=rng
     )
     bnet = BinaryBayesianNetwork([a, b, c])
 
@@ -288,12 +290,13 @@ def test_learning_triangle(rng):
     pa1b0_c1_true = rng.uniform()
     pa0b1_c1_true = rng.uniform()
     pa1b1_c1_true = rng.uniform()
-    a_true = BinaryNode('a', [], [pa1_true])
-    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true])
+    a_true = BinaryNode('a', [], [pa1_true], rng=rng)
+    b_true = BinaryNode('b', [a_true], [pa0_b1_true, pa1_b1_true], rng=rng)
     c_true = BinaryNode(
         'c',
         [a_true, b_true],
-        [pa0b0_c1_true, pa1b0_c1_true, pa0b1_c1_true, pa1b1_c1_true]
+        [pa0b0_c1_true, pa1b0_c1_true, pa0b1_c1_true, pa1b1_c1_true],
+        rng=rng
     )
     bnet_true = BinaryBayesianNetwork([a_true, b_true, c_true])
 
@@ -311,12 +314,13 @@ def test_learning_triangle(rng):
     pa1b0_c1_init = rng.uniform()
     pa0b1_c1_init = rng.uniform()
     pa1b1_c1_init = rng.uniform()
-    a = BinaryNode('a', [], [pa1_init])
-    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init])
+    a = BinaryNode('a', [], [pa1_init], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1_init, pa1_b1_init], rng=rng)
     c = BinaryNode(
         'c',
         [a, b],
-        [pa0b0_c1_init, pa1b0_c1_init, pa0b1_c1_init, pa1b1_c1_init]
+        [pa0b0_c1_init, pa1b0_c1_init, pa0b1_c1_init, pa1b1_c1_init],
+        rng=rng
     )
     bnet = BinaryBayesianNetwork([a, b, c])
 

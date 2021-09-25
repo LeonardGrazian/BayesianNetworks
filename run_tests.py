@@ -15,7 +15,7 @@ def run_tests():
     print('--- RUNNING TESTS WITH SEED {} ---'.format(seed))
 
     test_utils()
-    test_independence()
+    test_independence(rng)
     test_marginals(rng)
     test_learning(rng)
     # test_latent_learning(rng)

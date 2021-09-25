@@ -15,9 +15,9 @@ def test_rejection_sampling(rng):
     pa1_b1 = rng.uniform()
     pb0_c1 = rng.uniform()
     pb1_c1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
-    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
-    c = BinaryNode('c', [b], [pb0_c1, pb1_c1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1], rng=rng)
+    c = BinaryNode('c', [b], [pb0_c1, pb1_c1], rng=rng)
     bnet = BinaryBayesianNetwork([a, b, c])
 
     positives = 0

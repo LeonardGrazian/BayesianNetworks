@@ -15,9 +15,9 @@ def test_marginals_brute_force_cascade(rng):
     pa1_b1 = rng.uniform()
     pb0_c1 = rng.uniform()
     pb1_c1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
-    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
-    c = BinaryNode('c', [b], [pb0_c1, pb1_c1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1], rng=rng)
+    c = BinaryNode('c', [b], [pb0_c1, pb1_c1], rng=rng)
     bnet = BinaryBayesianNetwork([a, b, c])
 
     a_marginal_true = pa1
@@ -72,9 +72,9 @@ def test_marginals_brute_force_common_parent(rng):
     pa1_b1 = rng.uniform()
     pa0_c1 = rng.uniform()
     pa1_c1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
-    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
-    c = BinaryNode('c', [a], [pa0_c1, pa1_c1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1], rng=rng)
+    c = BinaryNode('c', [a], [pa0_c1, pa1_c1], rng=rng)
     bnet = BinaryBayesianNetwork([a, b, c])
 
     a_marginal_true = pa1
@@ -129,9 +129,14 @@ def test_marginals_brute_force_v_structure(rng):
     pa1b0_c1 = rng.uniform()
     pa0b1_c1 = rng.uniform()
     pa1b1_c1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
-    b = BinaryNode('b', [], [pb1])
-    c = BinaryNode('c', [a, b], [pa0b0_c1, pa1b0_c1, pa0b1_c1, pa1b1_c1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
+    b = BinaryNode('b', [], [pb1], rng=rng)
+    c = BinaryNode(
+        'c',
+        [a, b],
+        [pa0b0_c1, pa1b0_c1, pa0b1_c1, pa1b1_c1],
+        rng=rng
+    )
     bnet = BinaryBayesianNetwork([a, b, c])
 
     a_marginal_true = pa1
@@ -193,9 +198,14 @@ def test_marginals_brute_force_triangle(rng):
     pa1b0_c1 = rng.uniform()
     pa0b1_c1 = rng.uniform()
     pa1b1_c1 = rng.uniform()
-    a = BinaryNode('a', [], [pa1])
-    b = BinaryNode('b', [a], [pa0_b1, pa1_b1])
-    c = BinaryNode('c', [a, b], [pa0b0_c1, pa1b0_c1, pa0b1_c1, pa1b1_c1])
+    a = BinaryNode('a', [], [pa1], rng=rng)
+    b = BinaryNode('b', [a], [pa0_b1, pa1_b1], rng=rng)
+    c = BinaryNode(
+        'c',
+        [a, b],
+        [pa0b0_c1, pa1b0_c1, pa0b1_c1, pa1b1_c1],
+        rng=rng
+    )
     bnet = BinaryBayesianNetwork([a, b, c])
 
     a_marginal_true = pa1
