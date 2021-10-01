@@ -96,6 +96,16 @@ class BinaryNode:
             new_prob_table.append(n_ones * 1.0 / n_occurences)
         self.prob_table = new_prob_table
 
+    # @param parent_config_index: index of parent_config
+    # @param data: 3-tuple
+    #   1st entry of 2-tuple is # of times that parent config occurred
+    #   2nd entry of 2-tuple is # of times parent config caused node value = 1
+    #   3rd entry is the weight for this parent config
+    #   {parent_config0: (n_occurences, n_ones)}
+    # @returns None, updates prob_table of node
+    def latent_learn_(self, parent_config_index, data):
+        self.prob_table[parent_config_index] = data
+
 
 class BinaryBayesianNetwork:
     # @param nodes: an iterable containing BinaryNode objects
@@ -219,17 +229,110 @@ class BinaryBayesianNetwork:
     #   each observation is a dict, keys are nodes, values are node values
     #   each observation must contain a value for at least one node
     #   [{node: value, ...}, ...]
+    # @param max_em_iterations: int, maximum number of em iterations to use
+    # @param em_converge_threshold: TODO
     # @returns None, updates prob_tables of nodes in the network
-    # TODO: implementation does not pass tests
-    def learn_latent(self, data, em_iterations=1000):
-        for _ in range(em_iterations):
-            # hallucinate missing data using current prob_tables
+    # TODO: debug cascade
+    def learn_latent(
+            self,
+            latent_nodes,
+            data,
+            max_em_iterations=100,
+            em_converge_threshold=0.001
+        ):
+        num_latent_nodes = len(latent_nodes)
+        latent_states = 2 ** num_latent_nodes
+
+        for _ in range(max_em_iterations):
+            # E-step: hallucinate p(z | x)
             hallucinated_data = []
-            for obs in data:
-                hallucinated_obs = self.conditional_sample(obs)
-                hallucinated_data.append(hallucinated_obs)
-            # learn using real data and hallucinated data
-            self.learn(hallucinated_data)
+            for data_x_state in data:
+                data_x_state_copy = data_x_state.copy()
+                data_z_states = {}
+                for i in range(latent_states):
+                    data_z_state_values = parent_index_to_values(
+                        i,
+                        num_latent_nodes
+                    )
+                    data_z_state = {
+                        z: v
+                        for z, v
+                        in zip(latent_nodes, data_z_state_values)
+                    }
+
+                    data_x_state_copy.update(data_z_state)
+                    data_z_states[data_z_state_values] = self.probability(
+                        data_x_state_copy
+                    )
+
+                # normalized hallucinated z values
+                denom = sum([
+                    prob
+                    for data_state_values, prob
+                    in data_z_states.items()
+                ])
+                data_z_states = {
+                    data_state_values: prob * 1.0 / denom
+                    for data_state_values, prob
+                    in data_z_states.items()
+                }
+                hallucinated_data.append((data_x_state, data_z_states))
+
+            # M-step: update model params 
+            def state_match(data_state, state):
+                for node, value in state.items():
+                    if data_state[node] != value:
+                        return False
+                return True
+            def z_weight(data_z_states, z_state):
+                weight = 0
+                for data_z_state_values, prob in data_z_states.items():
+                    data_z_state = {
+                        z: v
+                        for z, v
+                        in zip(latent_nodes, data_z_state_values)
+                    }
+                    if state_match(data_z_state, z_state):
+                        weight += prob
+                return weight
+            for node in self.ordered_nodes:
+                for i in range(2 ** node.n_parents):
+                    parent_state = parent_index_to_values(i, node.n_parents)
+                    x_state = {
+                        p: v
+                        for p, v
+                        in zip(node.parents, parent_state)
+                        if p not in latent_nodes
+                    }
+                    z_state = {
+                        p: v
+                        for p, v
+                        in zip(node.parents, parent_state)
+                        if p in latent_nodes
+                    }
+
+                    # get weighted sum of data points that match parent values
+                    denom = 0
+                    for data_x_state, data_z_states in hallucinated_data:
+                        if state_match(data_x_state, x_state):
+                            denom += z_weight(data_z_states, z_state)
+
+                    # get weighted sum of data points that match parent values
+                    #   and node value equals 1
+                    if node in latent_nodes:
+                        z_state[node] = 1
+                    else:
+                        x_state[node] = 1
+                    num = 0
+                    for data_x_state, data_z_states in hallucinated_data:
+                        if state_match(data_x_state, x_state):
+                            num += z_weight(data_z_states, z_state)
+
+                    # set new probability in node's prob_table
+                    if denom == 0:
+                        node.latent_learn_(i, 0.0)
+                    else:
+                        node.latent_learn_(i, num * 1.0 / denom)
 
 
 def main():

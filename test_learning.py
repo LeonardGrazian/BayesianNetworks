@@ -356,4 +356,5 @@ def test_learning(rng):
 if __name__ == '__main__':
     seed = np.random.randint(1, 100)
     rng = np.random.default_rng(seed)
+    print('--- RUNNING TESTS WITH SEED {} ---'.format(seed))
     test_learning(rng)

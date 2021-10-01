@@ -33,7 +33,9 @@ def test_rejection_sampling(rng):
     ))
     assert fuzzy_match(true_prob, sample_prob, REJECTION_SAMPLING_ERROR)
 
+
 if __name__ == '__main__':
     seed = np.random.randint(1, 100)
     rng = np.random.default_rng(seed)
+    print('--- RUNNING TESTS WITH SEED {} ---'.format(seed))
     test_rejection_sampling(rng)
